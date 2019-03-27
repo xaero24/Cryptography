@@ -1,3 +1,7 @@
 *.doc*
+*.ppt*
+*.xls*
+*.rar
+*.tar.*
 *.zip
 *.pdf
