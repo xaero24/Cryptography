@@ -168,17 +168,18 @@ def decrypt(code,key):
     pkey=permutation(cipher,table['kcompress'],7,8)
 
     for i in range(3):
+        pkey_left, pkey_right = pkey[:len(pkey)//2], pkey[len(pkey)//2:]
         if i==2:
-            pkey_left, pkey_right = pkey[:len(pkey)/2], pkey[len(pkey)/2:]
+            
             pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
         elif i==3:
-            pkey_left, pkey_right = pkey[:len(pkey)/2], pkey[len(pkey)/2:]
+            
             pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
             pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
         pkey_left+=pkey_right
-        permkey2=permutation(pkey_left, table('kp'), 6, 8)
+        permkey2=permutation(pkey_left, table['kpermute'], 6, 8)
 
-        pcode_left, pcode_right = pcode[:len(pcode)/2], pcode[len(pcode)/2:]
+        pcode_left, pcode_right = pcode[:len(pcode)//2], pcode[len(pcode)//2:]
         result=function(pcode_right, permkey2)
         pcode_left_xored=xor(pcode_left, result)
         
