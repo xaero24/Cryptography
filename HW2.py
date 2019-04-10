@@ -2,8 +2,9 @@
 def hextobin(code):
     return bin(int(code,16))[2:].zfill(8)
 
-def bintodec(num):
-    return    
+
+def bintohex(msg):
+    return hex(int(msg,2))
 
 #print(hextobin("d8164228f290cbaf"))
 
@@ -95,12 +96,12 @@ def permutation(text,table,row,col):
     st=""
     for i in range(row):
         for j in range(col):
-            st+=text[table[i][j]-1]
+            st+=text[table[i-1][j-1]-1]
     return st
 
 def xor(l,r):
     st=""
-    for i in range(48):
+    for i in range(len(r)):
         if l[i]==r[i]:
             st+='0'
         else:
@@ -118,16 +119,39 @@ def function(r,key):
     for num in chunks:
         row=int((num[0]+num[5]),2)
         col=int((num[1]+num[2]+num[3]+num[4]),2)
-        st+=bin(int(sboxes[str(count)][row][col],10))[2:].zfill(4)
+        st+=bin(int(sboxes[str(count)][row][col]))[2:].zfill(4)
         count+=1
     return permutation(st,table['p'],4,8)
 
 def encrypt(plain,key):
     cypher=""
     code=plaintobin(plain)
+    key=plaintobin(key)
     table=permutaion_table()
     pcode=permutation(code,table['initial'],8,8)
+    left, right = pcode[:len(pcode)//2], pcode[len(pcode)//2:]
+    pkey=permutation(key,table['kcompress'],7,8)
+    kleft,kright=pkey[:len(pkey)//2], pkey[len(pkey)//2:]
+    for i in range(3):
+        if i==0|i==1:
+            kleft,kright=leftshift(kleft,1),leftshift(kright,1)
+        else:
+            kleft,kright=leftshift(kleft,2),leftshift(kright,2)
+        key=permutation(kleft+kright,table['kpermute'],6,8)
+        temp=left
+        left=right
+        right=xor(temp,function(right,key))
+    cypher=permutation(right+left,table['final'],8,8)
     return cypher
+
+def leftshift(key,count):
+    for i in range(count):
+        key+=key[0]
+        key=key[1:]
+    return key
+
+print(encrypt("nonsense","huyblyat"))
+print(bintohex("0110101010101000110100100001001101010110011000010100111001110001"))
 
 def decrypt(code,key):
     plaintext=""
