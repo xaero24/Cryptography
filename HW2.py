@@ -1,13 +1,23 @@
 ## DES Exercise
+"""
+Authors:
+Alex Weizman, 314342064
+Michael Afonin, 310514997
+"""
+
+#Converter from hex code to binary
 def hextobin(code):
     return bin(int(code,16))[2:].zfill(64)
 
+#Converter from binary code to hex
 def bintohex(msg):
     return hex(int(msg,2))
 
+#Converter from plain text to binary
 def plaintobin(msg):
     return ''.join(format(ord(x), 'b').zfill(8) for x in msg)
 
+#S-box "dispenser" function, used in the encryption function
 def s_box():
     s1=[[14,4,13,1,2,15,11,8,3,10,6,12,5,9,0,7],
     [0,15,7,4,14,2,13,1,10,6,12,11,9,5,3,8],
@@ -43,6 +53,7 @@ def s_box():
     [2,1,14,7,4,10,8,13,15,12,9,0,3,5,6]]
     return {'1':s1,'2':s2,'3':s3,'4':s4,'5':s5,'6':s6,'7':s7,'8':s8}
 
+#A function that contains permutation tables for the DES cipher
 def permutaion_table():
     ip=[[58,50,42,34,26,18,10,2],
     [60,52,44,36,28,20,12,4],
@@ -86,7 +97,8 @@ def permutaion_table():
     [51,45,33,48,44,49,39,56],
     [34,53,46,42,50,36,29,32]]
     return {'initial':ip,'final':fp,'exp':exp,'p':p,'kcompress':key_parity,'kpermute':key_permute}
-    
+
+#A function to use a selected table for each step of the encryption/decryption
 def permutation(text,table,row,col):
     st=""
     for i in range(row):
@@ -94,6 +106,7 @@ def permutation(text,table,row,col):
             st+=text[table[i][j]-1]
     return st
 
+#A simple XOR gate function
 def xor(l,r):
     st=""
     for i in range(len(r)):
@@ -103,27 +116,33 @@ def xor(l,r):
             st+='1'
     return st
 
+#The main function that is used for the encryption and decryption procedure.
 def function(r,key):
+    #Create local vars and table "dispensers"
     st=""
     table=permutaion_table()
     sboxes=s_box()
-    exp=permutation(r,table['exp'],8,6)
-    xored=xor(exp,key)
+    exp=permutation(r,table['exp'],8,6) #Expansion of the half-message on the current step
+    xored=xor(exp,key) #XORing the result with the permutated key
     count=1
-    chunks=[xored[i:i+6] for i in range(0,48,6)]
+    chunks=[xored[i:i+6] for i in range(0,48,6)] #Division of the message into 6-bit chunks
+
+    #Utilizing the correct S-box for each chunk of data
     for num in chunks:
         row=int((num[0]+num[5]),2)
         col=int((num[1]+num[2]+num[3]+num[4]),2)
         st+=bin(int(sboxes[str(count)][row][col]))[2:].zfill(4)
         count+=1
-    return permutation(st,table['p'],4,8)
+    return permutation(st,table['p'],4,8) #Final permutation before the result is returned
 
+#Simple right-rotating function
 def rightshift(msg):
     let=str(msg[len(msg)-1])
     let=let+msg
     let=let[:len(let)-1]
     return let
 
+#Encryptor function
 def encrypt(plain,key):
     cypher=""
     code=plaintobin(plain)
@@ -145,12 +164,14 @@ def encrypt(plain,key):
     cypher=permutation(right+left,table['final'],8,8)
     return bintohex(cypher)
 
+#Simple left-rotating function
 def leftshift(key,count):
     for i in range(count):
         key+=key[0]
         key=key[1:]
     return key
 
+#Decryptor function
 def decrypt(code,key):
     plaintext=""
     cipher=hextobin(code)
@@ -179,6 +200,8 @@ def decrypt(code,key):
     plaintext=bintohex(final_touch)
     return plaintext
 
+#Brueforce function, iterates on any possible letter combination (52^8 options)
+#If a correct encryption is found, the key is returned.
 def bruteforce(code):
     key=int(plaintobin('AAAAAAAA'), 2)
     cypher="0xd8164228f290cbaf"
