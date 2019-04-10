@@ -1,7 +1,9 @@
 ## DES Exercise
 def hextobin(code):
     return bin(int(code,16))[2:].zfill(8)
-    
+
+def bintodec(num):
+    return    
 
 #print(hextobin("d8164228f290cbaf"))
 
@@ -74,9 +76,21 @@ def permutaion_table():
     [1,15,23,26,5,18,31,10],
     [2,8,24,14,32,27,3,9],
     [19,13,30,6,22,11,4,25]]
-    return {'initial':ip,'final':fp,'exp':exp,'p':p}
+    key_parity=[[57,49,41,33,25,17,9,1],
+    [58,50,42,34,26,18,10,2],
+    [59,51,43,35,27,19,11,3],
+    [60,52,44,36,63,55,47,39],
+    [31,23,15,7,62,54,46,38],
+    [30,22,14,6,61,53,45,37],
+    [29,21,13,5,28,20,12,4]]
+    key_permute=[[14,17,11,24,1,5,3,28],
+    [15,6,21,10,23,19,12,4],
+    [26,8,16,7,27,20,13,2],
+    [41,52,31,37,47,55,30,40],
+    [51,45,33,48,44,49,39,56],
+    [34,53,46,42,50,36,29,32]]
+    return {'initial':ip,'final':fp,'exp':exp,'p':p,'kcompress':key_parity,'kpermute':key_permute}
     
-
 def permutation(text,table,row,col):
     st=""
     for i in range(row):
@@ -93,3 +107,28 @@ def xor(l,r):
             st+='1'
     return st
 
+def function(r,key):
+    st=""
+    table=permutaion_table()
+    sboxes=s_box()
+    exp=permutation(r,table['exp'],8,7)
+    xored=xor(exp,key)
+    count=1
+    chunks=[xored[i:i+6] for i in range(0,48,6)]
+    for num in chunks:
+        row=int((num[0]+num[5]),2)
+        col=int((num[1]+num[2]+num[3]+num[4]),2)
+        st+=bin(int(sboxes[str(count)][row][col],10))[2:].zfill(4)
+        count+=1
+    return permutation(st,table['p'],4,8)
+
+def encrypt(plain,key):
+    cypher=""
+    code=plaintobin(plain)
+    table=permutaion_table()
+    pcode=permutation(code,table['initial'],8,8)
+    return cypher
+
+def decrypt(code,key):
+    plaintext=""
+    return plaintext
