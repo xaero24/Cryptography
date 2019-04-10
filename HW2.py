@@ -179,4 +179,14 @@ def decrypt(code,key):
     plaintext=bintohex(final_touch)
     return plaintext
 
-print(decrypt(encrypt("nonsense", "abcdefgh"), "abcdefgh"))
+def bruteforce(code):
+    key=int(plaintobin('AAAAAAAA'), 2)
+    cypher="0xd8164228f290cbaf"
+    for i in range(58**8):
+        st=bin(key)[2:].zfill(64)
+        cyphered=encrypt("nonsense", st)
+        if cypher == cyphered['cypher']:
+            break
+        else:
+            key+=1
+    return key
