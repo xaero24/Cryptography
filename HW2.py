@@ -1,18 +1,12 @@
 ## DES Exercise
 def hextobin(code):
-    return bin(int(code,16))[2:].zfill(8)
-
+    return bin(int(code,16))[2:].zfill(64)
 
 def bintohex(msg):
     return hex(int(msg,2))
 
-#print(hextobin("d8164228f290cbaf"))
-
 def plaintobin(msg):
     return ''.join(format(ord(x), 'b').zfill(8) for x in msg)
-
-#print(plaintobin("nonsense"))
-
 
 def s_box():
     s1=[[14,4,13,1,2,15,11,8,3,10,6,12,5,9,0,7],
@@ -97,7 +91,7 @@ def permutation(text,table,row,col):
     st=""
     for i in range(row):
         for j in range(col):
-            st+=text[table[i-1][j-1]-1]
+            st+=text[table[i][j]-1]
     return st
 
 def xor(l,r):
@@ -113,7 +107,7 @@ def function(r,key):
     st=""
     table=permutaion_table()
     sboxes=s_box()
-    exp=permutation(r,table['exp'],8,7)
+    exp=permutation(r,table['exp'],8,6)
     xored=xor(exp,key)
     count=1
     chunks=[xored[i:i+6] for i in range(0,48,6)]
@@ -149,7 +143,7 @@ def encrypt(plain,key):
         left=right
         right=xor(temp,function(right,key))
     cypher=permutation(right+left,table['final'],8,8)
-    return cypher
+    return bintohex(cypher)
 
 def leftshift(key,count):
     for i in range(count):
@@ -157,23 +151,19 @@ def leftshift(key,count):
         key=key[1:]
     return key
 
-print(encrypt("nonsense","huyblyat"))
-print(bintohex("0110101010101000110100100001001101010110011000010100111001110001"))
-
 def decrypt(code,key):
     plaintext=""
     cipher=hextobin(code)
+    key=plaintobin(key)
     table=permutaion_table()
     pcode=permutation(cipher,table['initial'],8,8)
-    pkey=permutation(cipher,table['kcompress'],7,8)
+    pkey=permutation(key,table['kcompress'],7,8)
 
     for i in range(3):
         pkey_left, pkey_right = pkey[:len(pkey)//2], pkey[len(pkey)//2:]
-        if i==2:
-            
+        if i==1:
             pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
-        elif i==3:
-            
+        elif i==2:
             pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
             pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
         pkey_left+=pkey_right
@@ -188,3 +178,5 @@ def decrypt(code,key):
     final_touch=permutation(pcode, table['final'], 8, 8)
     plaintext=bintohex(final_touch)
     return plaintext
+
+print(decrypt(encrypt("nonsense", "abcdefgh"), "abcdefgh"))
