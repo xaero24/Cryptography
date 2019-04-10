@@ -12,6 +12,7 @@ def plaintobin(msg):
 
 #print(plaintobin("nonsense"))
 
+
 def s_box():
     s1=[[14,4,13,1,2,15,11,8,3,10,6,12,5,9,0,7],
     [0,15,7,4,14,2,13,1,10,6,12,11,9,5,3,8],
@@ -122,13 +123,63 @@ def function(r,key):
         count+=1
     return permutation(st,table['p'],4,8)
 
+def rightshift(msg):
+    let=str(msg[len(msg)-1])
+    let=let+msg
+    let=let[:len(let)-1]
+    return let
+
 def encrypt(plain,key):
     cypher=""
     code=plaintobin(plain)
     table=permutaion_table()
     pcode=permutation(code,table['initial'],8,8)
+
+    #key stripped to 56 bits via PC-1
+    for i in range(3):
+        #divide key into 2 halves
+        #derive shifted half-keys (1,2 one roll-left, 3 two roll-lefts)
+        #combine keys to temp string
+        #select 48 bits out of the combined key via PC-2
+
+        #divide plaintext to 2 halves
+
+        #FUNCTION:
+        #expand left side to 48 bits
+        #xor with the key
+        #push through s-boxes - 32 bits pop out
+        #permute result
+
+        #add left side (result) to right side
+        x=3
+    #do one last permutation on result
+
+    #Do bintoplain conversion
     return cypher
 
 def decrypt(code,key):
     plaintext=""
+    cipher=hextobin(code)
+    table=permutaion_table()
+    pcode=permutation(cipher,table['initial'],8,8)
+    pkey=permutation(cipher,table['kcompress'],7,8)
+
+    for i in range(3):
+        if i==2:
+            pkey_left, pkey_right = pkey[:len(pkey)/2], pkey[len(pkey)/2:]
+            pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
+        elif i==3:
+            pkey_left, pkey_right = pkey[:len(pkey)/2], pkey[len(pkey)/2:]
+            pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
+            pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
+        pkey_left+=pkey_right
+        permkey2=permutation(pkey_left, table('kp'), 6, 8)
+
+        pcode_left, pcode_right = pcode[:len(pcode)/2], pcode[len(pcode)/2:]
+        result=function(pcode_left, permkey2)
+        pcode_right+=result
+        pcode=pcode_right
+
+    final_touch=permutation(pcode, table['final'], 8, 8)
+    plaintext=bintohex(final_touch)
     return plaintext
