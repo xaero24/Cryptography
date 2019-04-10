@@ -179,9 +179,10 @@ def decrypt(code,key):
         permkey2=permutation(pkey_left, table('kp'), 6, 8)
 
         pcode_left, pcode_right = pcode[:len(pcode)/2], pcode[len(pcode)/2:]
-        result=function(pcode_left, permkey2)
-        pcode_right+=result
-        pcode=pcode_right
+        result=function(pcode_right, permkey2)
+        pcode_left_xored=xor(pcode_left, result)
+        
+        pcode=pcode_right+pcode_left_xored
 
     final_touch=permutation(pcode, table['final'], 8, 8)
     plaintext=bintohex(final_touch)
