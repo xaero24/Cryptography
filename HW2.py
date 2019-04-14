@@ -204,11 +204,11 @@ def decrypt(code,key):
 #If a correct encryption is found, the key is returned.
 def bruteforce(code):
     key=int(plaintobin('AAAAAAAA'), 2)
-    cypher="0xd8164228f290cbaf"
+    cypher=bintohex(plaintobin("nonsense"))
     for i in range(58**8):
         st=bin(key)[2:].zfill(64)
-        cyphered=encrypt("nonsense", st)
-        if cypher == cyphered['cypher']:
+        cyphered=encrypt(code, st)
+        if cypher == cyphered:
             break
         else:
             key+=1
