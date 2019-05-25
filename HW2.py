@@ -1,13 +1,23 @@
 ## DES Exercise
+"""
+Authors:
+Alex Weizman, 314342064
+Michael Afonin, 310514997
+"""
+
+#Converter from hex code to binary
 def hextobin(code):
     return bin(int(code,16))[2:].zfill(64)
 
+#Converter from binary code to hex
 def bintohex(msg):
     return hex(int(msg,2))
 
+#Converter from plain text to binary
 def plaintobin(msg):
     return ''.join(format(ord(x), 'b').zfill(8) for x in msg)
 
+#S-box "dispenser" function, used in the encryption function
 def s_box():
     s1=[[14,4,13,1,2,15,11,8,3,10,6,12,5,9,0,7],
     [0,15,7,4,14,2,13,1,10,6,12,11,9,5,3,8],
@@ -43,6 +53,7 @@ def s_box():
     [2,1,14,7,4,10,8,13,15,12,9,0,3,5,6]]
     return {'1':s1,'2':s2,'3':s3,'4':s4,'5':s5,'6':s6,'7':s7,'8':s8}
 
+#A function that contains permutation tables for the DES cipher
 def permutaion_table():
     ip=[[58,50,42,34,26,18,10,2],
     [60,52,44,36,28,20,12,4],
@@ -102,7 +113,9 @@ def xor(l,r,length):
             res='0'+res
     return res
 
+#The main function that is used for the encryption and decryption procedure.
 def function(r,key):
+    #Create local vars and table "dispensers"
     st=""
     table=permutaion_table()
     exp=permutation(r,table['exp'],8,6)
@@ -162,6 +175,7 @@ def des_encrypt(plain,key):
     cypher=permutation(left+right,table['final'],8,8)
     return back_to_plain(cypher)
 
+#Simple left-rotating function
 def leftshift(key,count):
     for i in range(count):
         key+=key[0]
