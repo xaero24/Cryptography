@@ -85,7 +85,7 @@ def permutaion_table():
     [41,52,31,37,47,55,30,40],
     [51,45,33,48,44,49,39,56],
     [34,53,46,42,50,36,29,32]]
-    return {'initial':ip,'final':fp,'exp':exp,'p':p,'kcompress':key_parity,'kpermute':key_permute}
+    return {'initial':ip,'final':fp,'exp':exp,'p':p,'pc1':key_parity,'pc2':key_permute}
     
 def permutation(text,table,row,col):
     st=""
@@ -94,56 +94,73 @@ def permutation(text,table,row,col):
             st+=text[table[i][j]-1]
     return st
 
-def xor(l,r):
-    st=""
-    for i in range(len(r)):
-        if l[i]==r[i]:
-            st+='0'
-        else:
-            st+='1'
-    return st
+def xor(l,r,length):
+    st=bin(int(l,2)^int(r,2))
+    res=str(st)[2:]
+    if len(res)<length:
+        while len(res) <length:
+            res='0'+res
+    return res
 
 def function(r,key):
     st=""
     table=permutaion_table()
-    sboxes=s_box()
     exp=permutation(r,table['exp'],8,6)
-    xored=xor(exp,key)
-    count=1
+    xored=xor(exp,key,48)
     chunks=[xored[i:i+6] for i in range(0,48,6)]
-    for num in chunks:
-        row=int((num[0]+num[5]),2)
-        col=int((num[1]+num[2]+num[3]+num[4]),2)
-        st+=bin(int(sboxes[str(count)][row][col]))[2:].zfill(4)
-        count+=1
+    s_boxes=s_box()
+    for i in range(1,len(chunks)+1):
+        st+=s_box_compression(chunks[i-1],s_boxes[str(i)])
     return permutation(st,table['p'],4,8)
 
-def rightshift(msg):
-    let=str(msg[len(msg)-1])
-    let=let+msg
-    let=let[:len(let)-1]
-    return let
+def s_box_compression(chunk,s_box):
+    row=int("0b"+(chunk[0]+chunk[5]),2)
+    col=int("0b"+(chunk[1:5]),2)
+    temp=bin(int(s_box[row][col]))[2:]
+    if len(temp) <4:
+        while len(temp)<4:
+            temp='0'+temp
+    return temp
 
-def encrypt(plain,key):
+def generate_keys(key):
+    keys=[]
+    final_keys=[]
+    table=permutaion_table()
+    ckey=permutation(key,table['pc1'],7,8)
+    for i in range(16):
+        if i in [1,2,9,12]:
+            key_left,key_right=ckey[0:28],ckey[28:56]
+            keys.append(leftshift(key_left,1)+leftshift(key_right,1))
+            ckey=keys[i]
+        else:
+            key_left,key_right=ckey[0:28],ckey[28:56]
+            keys.append(leftshift(key_left,2)+leftshift(key_right,2))
+            ckey=keys[i]
+    for i in range(16):
+        final_keys.append(permutation(keys[i],table['pc2'],6,8))
+    return final_keys
+
+def reverse_keys(key):
+    reversed_keys=[]
+    j=15
+    for i in range(16):
+        reversed_keys.append(key[j-i])
+    return reversed_keys
+
+def des_encrypt(plain,key):
     cypher=""
     code=plaintobin(plain)
     key=plaintobin(key)
     table=permutaion_table()
     pcode=permutation(code,table['initial'],8,8)
-    left, right = pcode[:len(pcode)//2], pcode[len(pcode)//2:]
-    pkey=permutation(key,table['kcompress'],7,8)
-    kleft,kright=pkey[:len(pkey)//2], pkey[len(pkey)//2:]
-    for i in range(3):
-        if i==0|i==1:
-            kleft,kright=leftshift(kleft,1),leftshift(kright,1)
-        else:
-            kleft,kright=leftshift(kleft,2),leftshift(kright,2)
-        key=permutation(kleft+kright,table['kpermute'],6,8)
+    left, right = pcode[0:32], pcode[32:64]
+    pkey=generate_keys(key)
+    for i in range(16):
         temp=left
         left=right
-        right=xor(temp,function(right,key))
-    cypher=permutation(right+left,table['final'],8,8)
-    return bintohex(cypher)
+        right=xor(temp,function(right,pkey[i]),32)
+    cypher=permutation(left+right,table['final'],8,8)
+    return back_to_plain(cypher)
 
 def leftshift(key,count):
     for i in range(count):
@@ -151,42 +168,30 @@ def leftshift(key,count):
         key=key[1:]
     return key
 
-def decrypt(code,key):
+def des_decrypt(code,key):
     plaintext=""
-    cipher=hextobin(code)
+    cipher=plaintobin(code)
     key=plaintobin(key)
     table=permutaion_table()
     pcode=permutation(cipher,table['initial'],8,8)
-    pkey=permutation(key,table['kcompress'],7,8)
+    left, right = pcode[0:32], pcode[32:64]
+    pkey=reverse_keys(generate_keys(key))
+    for i in range(16):
+        temp=left
+        left=right
+        right=xor(temp,function(right,pkey[i]),32)
+    plaintext=permutation(left+right, table['final'], 8, 8)
+  
+    return back_to_plain(plaintext)
 
-    for i in range(3):
-        pkey_left, pkey_right = pkey[:len(pkey)//2], pkey[len(pkey)//2:]
-        if i==1:
-            pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
-        elif i==2:
-            pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
-            pkey_left, pkey_right = rightshift(pkey_left), rightshift(pkey_right)
-        pkey_left+=pkey_right
-        permkey2=permutation(pkey_left, table['kpermute'], 6, 8)
+def back_to_plain(string):
+    n = 8
+    temp = [string[i:i + n] for i in range(0, len(string), n)]
+    result=""
+    for i in range(8):
+        result += chr(int(temp[i], 2))
+    return result
 
-        pcode_left, pcode_right = pcode[:len(pcode)//2], pcode[len(pcode)//2:]
-        result=function(pcode_right, permkey2)
-        pcode_left_xored=xor(pcode_left, result)
-        
-        pcode=pcode_right+pcode_left_xored
-
-    final_touch=permutation(pcode, table['final'], 8, 8)
-    plaintext=bintohex(final_touch)
-    return plaintext
-
-def bruteforce(code):
-    key=int(plaintobin('AAAAAAAA'), 2)
-    cypher="0xd8164228f290cbaf"
-    for i in range(58**8):
-        st=bin(key)[2:].zfill(64)
-        cyphered=encrypt("nonsense", st)
-        if cypher == cyphered['cypher']:
-            break
-        else:
-            key+=1
-    return key
+print(bintohex(plaintobin("sometext")))
+print(des_encrypt("sometext","nonsense"))
+print(des_decrypt(des_encrypt("sometext","nonsense"),"nonsense"))
