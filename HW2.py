@@ -4,11 +4,11 @@ Authors:
 Alex Weizman, 314342064
 Michael Afonin, 310514997
 """
-
+from crypto2 import genrate_16_keys
 #Converter from hex code to binary
 def hextobin(code):
     return bin(int(code,16))[2:].zfill(64)
-
+ 
 #Converter from binary code to hex
 def bintohex(msg):
     return hex(int(msg,2))
@@ -106,12 +106,11 @@ def permutation(text,table,row,col):
     return st
 
 def xor(l,r,length):
-    st=bin(int(l,2)^int(r,2))
-    res=str(st)[2:]
-    if len(res)<length:
-        while len(res) <length:
-            res='0'+res
-    return res
+    st=str(bin(int(l,2)^int(r,2)))[2:]
+    if len(st)<length:
+        while len(st) <length:
+            st='0'+st
+    return st
 
 #The main function that is used for the encryption and decryption procedure.
 def function(r,key):
@@ -120,35 +119,44 @@ def function(r,key):
     table=permutaion_table()
     exp=permutation(r,table['exp'],8,6)
     xored=xor(exp,key,48)
-    chunks=[xored[i:i+6] for i in range(0,48,6)]
+   
+    #chunks=[xored[i:i+6] for i in range(0,48,6)]
     s_boxes=s_box()
-    for i in range(1,len(chunks)+1):
-        st+=s_box_compression(chunks[i-1],s_boxes[str(i)])
+    #for i in range(1,len(chunks)+1):
+        #st+=s_box_compression(chunks[i-1],s_boxes[str(i)])
+    st=s_box_compression(xored,s_boxes)
     return permutation(st,table['p'],4,8)
 
-def s_box_compression(chunk,s_box):
-    row=int("0b"+(chunk[0]+chunk[5]),2)
-    col=int("0b"+(chunk[1:5]),2)
-    temp=bin(int(s_box[row][col]))[2:]
-    if len(temp) <4:
-        while len(temp)<4:
-            temp='0'+temp
-    return temp
+def s_box_compression(msg,s_box):
+    st=""
+    s_num=1
+    for i in range(0,len(msg),6):
+        chunk=msg[i:i+6]
+        row=int(chunk[0]+chunk[-1],2)
+        col=int(chunk[1:5],2)
+        table=s_box[str(s_num)]
+        temp=table[row][col]
+        st+=format(temp,'04b')
+        s_num+=1
+    return st
 
 def generate_keys(key):
     keys=[]
     final_keys=[]
     table=permutaion_table()
     ckey=permutation(key,table['pc1'],7,8)
-    for i in range(16):
-        if i in [1,2,9,12]:
+    key_left,key_right=ckey[0:28],ckey[28:56]
+    keys.append(leftshift(key_left,1)+leftshift(key_right,1))
+    ckey=keys[0]
+    for i in range(2,17):
+        if i in [1,2,9,16]:
             key_left,key_right=ckey[0:28],ckey[28:56]
             keys.append(leftshift(key_left,1)+leftshift(key_right,1))
-            ckey=keys[i]
+            ckey=keys[i-1]
         else:
             key_left,key_right=ckey[0:28],ckey[28:56]
             keys.append(leftshift(key_left,2)+leftshift(key_right,2))
-            ckey=keys[i]
+            ckey=keys[i-1]
     for i in range(16):
         final_keys.append(permutation(keys[i],table['pc2'],6,8))
     return final_keys
@@ -164,16 +172,17 @@ def des_encrypt(plain,key):
     cypher=""
     code=plaintobin(plain)
     key=plaintobin(key)
+    pkey=generate_keys(key)
     table=permutaion_table()
     pcode=permutation(code,table['initial'],8,8)
     left, right = pcode[0:32], pcode[32:64]
-    pkey=generate_keys(key)
+   
     for i in range(16):
         temp=left
         left=right
         right=xor(temp,function(right,pkey[i]),32)
     cypher=permutation(left+right,table['final'],8,8)
-    return back_to_plain(cypher)
+    return binary_string(cypher)
 
 #Simple left-rotating function
 def leftshift(key,count):
@@ -196,16 +205,13 @@ def des_decrypt(code,key):
         right=xor(temp,function(right,pkey[i]),32)
     plaintext=permutation(left+right, table['final'], 8, 8)
   
-    return back_to_plain(plaintext)
+    return binary_string(plaintext)
 
-def back_to_plain(string):
-    n = 8
-    temp = [string[i:i + n] for i in range(0, len(string), n)]
-    result=""
-    for i in range(8):
-        result += chr(int(temp[i], 2))
-    return result
 
-print(bintohex(plaintobin("sometext")))
+def binary_string(s):
+    return ''.join(chr(int(s[i*8:i*8+8],2)) for i in range(len(s)//8))
+
+
+
 print(des_encrypt("sometext","nonsense"))
-print(des_decrypt(des_encrypt("sometext","nonsense"),"nonsense"))
+#print(des_decrypt(des_encrypt("sometext","nonsense"),"nonsense"))
