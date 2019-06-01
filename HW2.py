@@ -41,7 +41,7 @@ def s_box():
     s8=[[13,2,8,4,6,15,11,1,10,9,3,14,5,0,12,7],
     [1,15,13,8,10,3,7,4,12,5,6,11,0,14,9,2],
     [7,11,4,1,9,12,14,2,0,6,10,13,15,3,5,8],
-    [2,1,14,7,4,10,8,13,15,12,9,0,3,5,6]]
+    [2,1,14,7,4,10,8,13,15,12,9,0,3,5,6,11]]
     return {'1':s1,'2':s2,'3':s3,'4':s4,'5':s5,'6':s6,'7':s7,'8':s8}
 
 #A function that contains permutation tables for the DES cipher
@@ -120,10 +120,12 @@ def s_box_compression(msg,s_box):
     s_num=1
     for i in range(0,len(msg),6):
         chunk=msg[i:i+6]
-        row=int("0b"+chunk[0]+chunk[5],2)
-        col=int("0b"+chunk[1:5],2)
-        table=str(bin(s_box[str(s_num)][row][col]))[2:].zfill(4)
-        st+=table
+        row=int(chunk[0]+chunk[5],2)
+        col=int(chunk[1:5],2)
+        
+        table=bin(int(s_box[str(s_num)][row][col]))[2:]
+        res=str(table).zfill(4)
+        st+=res
         s_num+=1
     return st
 
@@ -201,5 +203,5 @@ def binary_string(s):
 
 
 
-print(des_encrypt("sometext","nonsense"))
-print(des_decrypt(des_encrypt("sometext","nonsense"),"nonsense"))
+print(des_encrypt("t somete","nonsense"))
+print(des_decrypt(des_encrypt("t somete","nonsense"),"nonsense"))
