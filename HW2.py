@@ -4,15 +4,6 @@ Authors:
 Alex Weizman, 314342064
 Michael Afonin, 310514997
 """
-from crypto2 import genrate_16_keys
-#Converter from hex code to binary
-def hextobin(code):
-    return bin(int(code,16))[2:].zfill(64)
- 
-#Converter from binary code to hex
-def bintohex(msg):
-    return hex(int(msg,2))
-
 #Converter from plain text to binary
 def plaintobin(msg):
     return ''.join(format(ord(x), 'b').zfill(8) for x in msg)
@@ -119,12 +110,9 @@ def function(r,key):
     table=permutaion_table()
     exp=permutation(r,table['exp'],8,6)
     xored=xor(exp,key,48)
-   
-    #chunks=[xored[i:i+6] for i in range(0,48,6)]
     s_boxes=s_box()
-    #for i in range(1,len(chunks)+1):
-        #st+=s_box_compression(chunks[i-1],s_boxes[str(i)])
     st=s_box_compression(xored,s_boxes)
+    
     return permutation(st,table['p'],4,8)
 
 def s_box_compression(msg,s_box):
@@ -132,11 +120,10 @@ def s_box_compression(msg,s_box):
     s_num=1
     for i in range(0,len(msg),6):
         chunk=msg[i:i+6]
-        row=int(chunk[0]+chunk[-1],2)
-        col=int(chunk[1:5],2)
-        table=s_box[str(s_num)]
-        temp=table[row][col]
-        st+=format(temp,'04b')
+        row=int("0b"+chunk[0]+chunk[5],2)
+        col=int("0b"+chunk[1:5],2)
+        table=str(bin(s_box[str(s_num)][row][col]))[2:].zfill(4)
+        st+=table
         s_num+=1
     return st
 
@@ -175,13 +162,13 @@ def des_encrypt(plain,key):
     pkey=generate_keys(key)
     table=permutaion_table()
     pcode=permutation(code,table['initial'],8,8)
-    left, right = pcode[0:32], pcode[32:64]
-   
     for i in range(16):
+        left, right = pcode[0:32], pcode[32:64]
         temp=left
         left=right
         right=xor(temp,function(right,pkey[i]),32)
-    cypher=permutation(left+right,table['final'],8,8)
+        pcode=right+left
+    cypher=permutation(pcode,table['final'],8,8)
     return binary_string(cypher)
 
 #Simple left-rotating function
@@ -197,13 +184,14 @@ def des_decrypt(code,key):
     key=plaintobin(key)
     table=permutaion_table()
     pcode=permutation(cipher,table['initial'],8,8)
-    left, right = pcode[0:32], pcode[32:64]
     pkey=reverse_keys(generate_keys(key))
     for i in range(16):
+        left, right = pcode[0:32], pcode[32:64]
         temp=left
         left=right
-        right=xor(temp,function(right,pkey[i]),32)
-    plaintext=permutation(left+right, table['final'], 8, 8)
+        right=xor(function(right,pkey[i]),temp,32)
+        pcode=right+left
+    plaintext=permutation(pcode, table['final'], 8, 8)
   
     return binary_string(plaintext)
 
@@ -214,4 +202,4 @@ def binary_string(s):
 
 
 print(des_encrypt("sometext","nonsense"))
-#print(des_decrypt(des_encrypt("sometext","nonsense"),"nonsense"))
+print(des_decrypt(des_encrypt("sometext","nonsense"),"nonsense"))
