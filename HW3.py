@@ -126,7 +126,7 @@ def ctr_decrypt(cipher,key,nunce):
 
 code="sometext sometext sometext sometext"
 key="nonsense"
-iv="justaniv"
+iv="mySecret"
 nunce="itsnunce"
 print("ECB Mode:")
 print("Encrypt:")
