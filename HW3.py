@@ -1,3 +1,9 @@
+"""
+Authors:
+Alex Weizman, 314342064
+Michael Afonin, 310514997
+"""
+
 from HW2 import des_encrypt,des_decrypt,binary_string,plaintobin,xor
 
 
